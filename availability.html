@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Daily Availability — Scrum Capacity Planner</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <style>
+      .availability-app { display: grid; grid-template-columns: 280px 1fr; height: 100vh; }
+      .topbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+      .table-scroll { overflow:auto; border:1px solid var(--border); border-radius:14px; background: linear-gradient(180deg, #0d1423, #0a0f1b); }
+      .avail-table { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; table-layout: fixed; }
+      .avail-table th, .avail-table td { padding: 8px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); }
+      .avail-table th:first-child, .avail-table td:first-child { position: sticky; left: 0; background:#0b1220; z-index: 3; }
+      .avail-table th:nth-child(2), .avail-table td:nth-child(2) { position: sticky; left: 120px; background:#0b1220; z-index: 2; }
+      .avail-table th:nth-child(3), .avail-table td:nth-child(3) { position: sticky; left: 210px; background:#0b1220; z-index: 1; }
+      .avail-table thead th { position: sticky; top: 0; background:#0b1220; z-index: 2; }
+      .avail-table input[type="number"] { width: 80px; }
+      .legend { color: var(--muted); font-size: 12px; margin-top:8px; }
+      .sidebar .back-link { display:block; margin-top:12px; }
+      .date-cell { white-space: nowrap; min-width: 180px; }
+      .sprint-cell { min-width: 120px; white-space: nowrap; color: var(--text); }
+      .weekday-cell { min-width: 90px; white-space: nowrap; color: var(--muted); }
+      .member-col { min-width: 120px; }
+      tr.weekend td { background: #0f1a2e; }
+      tr.weekend td.sprint-cell, tr.weekend td.weekday-cell, tr.weekend td.date-cell { background: #0c1526; }
+    </style>
+  </head>
+  <body>
+    <div class="availability-app">
+      <aside class="sidebar">
+        <h1>Availability</h1>
+        <a class="back-link" href="./index.html"><button class="secondary">← Back to Planner</button></a>
+        <hr />
+        <div class="team-list" id="teamList"></div>
+      </aside>
+      <main class="main">
+        <div class="topbar">
+          <div>
+            <h2 id="teamTitle">Select a team</h2>
+            <div class="legend">Edit per-day availability percentage (0–100). These overrides take precedence over member availability% and PTO in capacity calculations.</div>
+          </div>
+        </div>
+        <div class="table-scroll" id="tableContainer">
+          <!-- table inserted dynamically -->
+        </div>
+        <p class="hint">Tips: Double-click a cell to select; use Tab/Shift+Tab to navigate. Use the row actions to quickly fill a day with 0/50/100 or clear overrides.</p>
+      </main>
+    </div>
+    <script src="./availability.js"></script>
+  </body>
+  </html>
+
+

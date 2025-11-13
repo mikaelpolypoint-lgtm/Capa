@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Developers — Scrum Capacity Planner</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <style>
+      .developers-app { display: grid; grid-template-columns: 280px 1fr; height: 100vh; }
+      .table-wrap { overflow: auto; border:1px solid var(--border); border-radius:14px; background: linear-gradient(180deg, #0d1423, #0a0f1b); }
+      table.dev-table { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; }
+      table.dev-table th, table.dev-table td { padding: 8px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); }
+      table.dev-table thead th { position: sticky; top: 0; background:#0b1220; z-index: 2; }
+      table.dev-table th:first-child, table.dev-table td:first-child { position: sticky; left: 0; background:#0b1220; z-index: 3; }
+      .col-name { min-width: 160px; }
+      .col-short { min-width: 90px; }
+      .col-job { min-width: 130px; }
+      .col-num { min-width: 110px; }
+      .row-actions { min-width: 120px; }
+      .topbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+      .inline { display:flex; gap:8px; align-items:center; }
+    </style>
+  </head>
+  <body>
+    <div class="developers-app">
+      <aside class="sidebar">
+        <h1>Developers</h1>
+        <a class="back-link" href="./index.html"><button class="secondary">← Back to Planner</button></a>
+        <hr />
+        <div class="team-list" id="teamList"></div>
+      </aside>
+      <main class="main">
+        <div class="topbar">
+          <h2 id="teamTitle">Select a team</h2>
+          <div class="inline">
+            <input id="newDevName" type="text" placeholder="New developer name" />
+            <button id="addDevBtn">Add Developer</button>
+          </div>
+        </div>
+        <div class="table-wrap" id="tableContainer"></div>
+        <p class="hint">Ratios are percentages (0–100). Defaults: Overhead 20%, Special 0%, Maintain 30%, Development 50%, Velocity 1 SP/day.</p>
+      </main>
+    </div>
+    <script src="./developers.js"></script>
+  </body>
+  </html>
+
+

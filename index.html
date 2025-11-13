@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Scrum Capacity Planner</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <h1>Teams</h1>
+        <div class="team-list" id="teamList"></div>
+        <div class="team-add">
+          <input id="newTeamName" type="text" placeholder="New team name" />
+          <button id="addTeamBtn">Add Team</button>
+        </div>
+        <div style="margin-top:12px; display:grid; gap:8px;">
+          <a href="./developers.html"><button class="secondary">Manage Developers</button></a>
+          <a href="./availability.html"><button class="secondary">Edit Daily Availability</button></a>
+        </div>
+        <hr />
+        <div class="io">
+          <button id="exportBtn">Export Data</button>
+          <label class="import-btn">
+            Import Data
+            <input id="importInput" type="file" accept="application/json" />
+          </label>
+          <button id="resetBtn" class="danger">Reset</button>
+        </div>
+      </aside>
+      <main class="main">
+        <section class="team-header">
+          <div>
+            <h2 id="teamTitle">Select or create a team</h2>
+            <div class="inline-group">
+              <label>Base velocity (pts/sprint)
+                <input id="baseVelocity" type="number" min="0" step="0.1" />
+              </label>
+              <label>Daily focus hours/member
+                <input id="dailyFocusHours" type="number" min="0" step="0.5" />
+              </label>
+            </div>
+          </div>
+          <div class="actions">
+            <button id="deleteTeamBtn" class="danger">Delete Team</button>
+          </div>
+        </section>
+
+        <section class="sprint">
+          <h3>Sprint</h3>
+          <div class="grid-3">
+            <label>Sprint name
+              <input id="sprintName" type="text" placeholder="e.g., Sprint 42" />
+            </label>
+            <label>Working days
+              <input id="workingDays" type="number" min="1" max="20" />
+            </label>
+            <label>Focus factor (0-1)
+              <input id="focusFactor" type="number" min="0" max="1" step="0.05" />
+            </label>
+          </div>
+        </section>
+
+        <section class="members">
+          <div class="members-header">
+            <h3>Members</h3>
+            <div class="member-add">
+              <input id="newMemberName" type="text" placeholder="Member name" />
+              <button id="addMemberBtn">Add Member</button>
+            </div>
+          </div>
+          <div class="member-table" id="memberTable">
+            <div class="member-row header">
+              <div>Name</div>
+              <div>Availability %</div>
+              <div>PTO days</div>
+              <div>Notes</div>
+              <div></div>
+            </div>
+            <!-- rows inserted here -->
+          </div>
+        </section>
+
+        <section class="summary">
+          <h3>Capacity Summary</h3>
+          <div class="summary-grid">
+            <div>
+              <div class="label">Ideal hours</div>
+              <div class="value" id="idealHours">0</div>
+            </div>
+            <div>
+              <div class="label">Available hours</div>
+              <div class="value" id="availableHours">0</div>
+            </div>
+            <div>
+              <div class="label">Availability %</div>
+              <div class="value" id="availabilityPct">0%</div>
+            </div>
+            <div>
+              <div class="label">Adjusted velocity</div>
+              <div class="value" id="adjustedVelocity">0</div>
+            </div>
+          </div>
+          <p class="hint">
+            Adjusted velocity = Base velocity × (Available hours ÷ Ideal hours) × Focus factor
+          </p>
+        </section>
+      </main>
+    </div>
+    <script src="./app.js"></script>
+  </body>
+  </html>
+
+
