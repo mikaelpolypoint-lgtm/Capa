@@ -30,7 +30,8 @@ if (!state || !Array.isArray(state.teams) || state.teams.length === 0) {
 const els = {
   teamList: document.getElementById('teamList'),
   teamTitle: document.getElementById('teamTitle'),
-  tableContainer: document.getElementById('tableContainer')
+  tableContainer: document.getElementById('tableContainer'),
+  csvUploadInput: document.getElementById('csvUploadInput')
 };
 
 function getSelectedTeam() {
@@ -159,11 +160,196 @@ function renderHeader(team) {
   els.teamTitle.textContent = team ? `${team.name} — Daily Availability` : 'Select a team';
 }
 
+function parseCSV(text) {
+  const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+  if (lines.length < 2) throw new Error('CSV must have at least 2 rows');
+  
+  // Parse CSV lines (handling semicolons and commas as delimiters, and quoted fields)
+  const rows = lines.map(line => {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    // Check if line uses semicolons or commas
+    const hasSemicolon = line.includes(';');
+    const delimiter = hasSemicolon ? ';' : ',';
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === delimiter && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  });
+  
+  return rows;
+}
+
+function parseDate(dateStr) {
+  // Try various date formats (prioritize DD.MM.YY as it's most common in the example)
+  const formats = [
+    /^(\d{2})\.(\d{2})\.(\d{2})$/, // DD.MM.YY (e.g., 04.12.25 = Dec 4, 2025)
+    /^(\d{2})\.(\d{2})\.(\d{4})$/, // DD.MM.YYYY
+    /^(\d{4})-(\d{2})-(\d{2})$/, // YYYY-MM-DD
+    /^(\d{2})\/(\d{2})\/(\d{4})$/, // MM/DD/YYYY
+    /^(\d{2})\/(\d{2})\/(\d{2})$/, // MM/DD/YY
+  ];
+  
+  for (const format of formats) {
+    const match = dateStr.match(format);
+    if (match) {
+      if (format === formats[0]) {
+        // DD.MM.YY (e.g., 04.12.25 = Dec 4, 2025)
+        const year = 2000 + parseInt(match[3]);
+        return new Date(year, parseInt(match[2]) - 1, parseInt(match[1]));
+      } else if (format === formats[1]) {
+        // DD.MM.YYYY
+        return new Date(parseInt(match[3]), parseInt(match[2]) - 1, parseInt(match[1]));
+      } else if (format === formats[2]) {
+        // YYYY-MM-DD
+        return new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
+      } else if (format === formats[3] || format === formats[4]) {
+        // MM/DD/YYYY or MM/DD/YY
+        const year = match[3].length === 2 ? 2000 + parseInt(match[3]) : parseInt(match[3]);
+        return new Date(year, parseInt(match[1]) - 1, parseInt(match[2]));
+      }
+    }
+  }
+  
+  // Fallback to Date constructor
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) throw new Error(`Invalid date format: ${dateStr}`);
+  return date;
+}
+
+function parseValue(value) {
+  if (!value || value.trim() === '') return 'h'; // Default to unavailable
+  
+  const val = String(value).trim().toLowerCase();
+  
+  // Check for "1" (exact match)
+  if (val === '1' || val === '1.0' || val === '1.00') return '1';
+  
+  // Check for "0.5" (exact match or contains 0.5, e.g., "0.5/x", "0.5/p", "x/0.5", "h/0.5")
+  // This takes priority over public holiday
+  if (val === '0.5' || val.includes('0.5')) return '0.5';
+  
+  // Check for public holiday "p" (standalone or in combinations like "p", "h/p")
+  // Note: "0.5/p" is already handled above
+  if (val === 'p' || val.includes('/p')) return 'p';
+  
+  // Everything else is unavailable (h, x, c, etc.)
+  return 'h';
+}
+
+function importCSV(csvText) {
+  const team = getSelectedTeam();
+  if (!team) {
+    alert('Please select a team first');
+    return;
+  }
+  
+  try {
+    const rows = parseCSV(csvText);
+    
+    if (rows.length < 2) {
+      throw new Error('CSV must have at least 2 rows (header + data)');
+    }
+    
+    // Row 1 contains developer shortcuts in columns (skip column 1 which is date header)
+    const headerRow = rows[0];
+    if (headerRow.length < 2) {
+      throw new Error('CSV must have at least 2 columns (date + at least one developer)');
+    }
+    
+    // Map column indices to developers by matching shortcuts
+    const columnToDeveloper = new Map();
+    for (let colIdx = 1; colIdx < headerRow.length; colIdx++) {
+      const headerValue = String(headerRow[colIdx] || '').trim();
+      if (!headerValue) continue;
+      
+      // Find developer with matching shortcut
+      const developer = team.members.find(m => {
+        const shortcut = String(m.shortcut || '').trim().toUpperCase();
+        return shortcut === headerValue.toUpperCase();
+      });
+      
+      if (developer) {
+        columnToDeveloper.set(colIdx, developer);
+        ensureOverridesMember(developer);
+      }
+    }
+    
+    if (columnToDeveloper.size === 0) {
+      alert('No matching developers found. Make sure the CSV header row contains developer shortcuts that match your developers.');
+      return;
+    }
+    
+    // Process data rows (starting from row 2, index 1)
+    let updatedCount = 0;
+    for (let rowIdx = 1; rowIdx < rows.length; rowIdx++) {
+      const row = rows[rowIdx];
+      if (row.length < 2) continue;
+      
+      // Column 1 is the date
+      const dateStr = String(row[0] || '').trim();
+      if (!dateStr) continue;
+      
+      try {
+        const date = parseDate(dateStr);
+        const isoDate = toISODate(date);
+        
+        // Update each developer's availability for this date
+        columnToDeveloper.forEach((developer, colIdx) => {
+          if (colIdx < row.length) {
+            const value = row[colIdx];
+            const parsedValue = parseValue(value);
+            developer.dailyOverrides[isoDate] = parsedValue;
+            updatedCount++;
+          }
+        });
+      } catch (err) {
+        console.warn(`Skipping row ${rowIdx + 1}: ${err.message}`);
+      }
+    }
+    
+    save(state);
+    renderAll();
+    alert(`Successfully imported ${updatedCount} availability entries for ${columnToDeveloper.size} developer(s).`);
+  } catch (err) {
+    alert(`Error importing CSV: ${err.message}`);
+    console.error(err);
+  }
+}
+
 function renderAll() {
   renderTeams();
   const team = getSelectedTeam();
   renderHeader(team);
   renderTable(team);
+}
+
+// CSV upload handler
+if (els.csvUploadInput) {
+  els.csvUploadInput.onchange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    try {
+      const text = await file.text();
+      importCSV(text);
+    } catch (err) {
+      alert(`Failed to read CSV file: ${err.message}`);
+    } finally {
+      e.target.value = '';
+    }
+  };
 }
 
 renderAll();
